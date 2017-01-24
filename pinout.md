@@ -1,6 +1,8 @@
-# Telepulssi oy TP-KN10 reverse-engineering
+# Telepulssi Oy TP-KN10
 
-Slave board pinout
+Display with 8 LED segment displays of size 5x7. Reverse engineered by kahvikello & Zouppen.
+
+Slave board pinout:
 
 Pin | Description
 ----|------------
