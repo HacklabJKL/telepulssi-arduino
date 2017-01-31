@@ -14,7 +14,7 @@ Pin | Description | Atmega328 pin | Duemilanove/Uno pin
  6  | IC 21 OUTPUT ENABLE        | PC4  | A4
  7  | IC 20 OUTPUT ENABLE        | PC3  | A3
  8  | IC 19 OUTPUT ENABLE        | PC2  | A2
- 9  | IC 18 OUTPUT ENABLE        | PC2  | A1
+ 9  | IC 18 OUTPUT ENABLE        | PC1  | A1
 10  | IC 17 OUTPUT ENABLE        | PC0  | A0
 11  | IC 16 OUTPUT ENABLE        | PD7  | 7
 12  | IC 15 OUTPUT ENABLE        | PD6  | 6
