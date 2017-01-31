@@ -6,13 +6,24 @@
 #include <SPI.h>
 #include <TimerOne.h>
 
-static uint8_t koira14[] = {
+static uint8_t buf_a[] = {
 	0x01, 0x00, 0x08, 0x04, 0x10, 0x00, 0x0A, 0x04, 0x01, 0x00, 0x08, 0x04,
 	0x10, 0x00, 0x08, 0x04, 0x07, 0x07, 0x0B, 0x05, 0x17, 0x03, 0x0A, 0x05,
 	0x09, 0x14, 0x18, 0x04, 0x14, 0x04, 0x1A, 0x04, 0x09, 0x17, 0x18, 0x04,
 	0x17, 0x04, 0x1A, 0x04, 0x09, 0x07, 0x0B, 0x0D, 0x17, 0x13, 0x0A, 0x1D,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00
 };
+
+static uint8_t buf_b[sizeof(buf_a)];
+
+uint8_t *buf_front = buf_a;
+uint8_t *buf_back = buf_b;
+
+void buf_swap(void) {
+	uint8_t *tmp = buf_front;
+	buf_front = buf_back;
+	buf_back = tmp;
+}
 
 void setup() {
 	// Set output pins for LED display
@@ -41,9 +52,10 @@ void loop() {
 			return;
 		}
 		
-		koira14[buf_i++] = data;
-		if (buf_i == sizeof(koira14)) {
+		buf_back[buf_i++] = data;
+		if (buf_i == sizeof(buf_a)) {
 			buf_i = 0;
+			buf_swap();
 			Serial.write('K');
 		}
         }
@@ -83,5 +95,5 @@ void driveDisplay() {
 	digitalWrite(5, LOW);
 	
 	// Send new data to SPI. Don't wait it to complete
-	SPDR = koira14[8*row_i+col_i];
+	SPDR = buf_front[8*row_i+col_i];
 }
