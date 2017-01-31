@@ -20,10 +20,12 @@ static uint8_t koira14[] = {
 */
 
 void setup() {
-	// Set output pins
+	// Set output pins for LED display
 	DDRC = 0xFF;
 	DDRD = 0xFF;
-	// initialize SPI:
+	// Initialize serial
+	Serial.begin(9600);
+	// initialize SPI
 	SPI.begin();
 	Timer1.initialize(200);
 	Timer1.attachInterrupt(driveDisplay);
@@ -31,8 +33,25 @@ void setup() {
 
 uint8_t col_i = 0;
 uint8_t row_i = 0;
+int buf_i = 0;
 
 void loop() {
+	if (Serial.available() > 0) {
+                // read the incoming byte
+                uint8_t data = Serial.read();
+		if (data > 32) {
+			// If sending escape, reset buffer to beginning
+			buf_i = 0;
+			Serial.write('R');
+			return;
+		}
+		
+		koira14[buf_i++] = data;
+		if (buf_i == sizeof(koira14)) {
+			buf_i = 0;
+			Serial.write('K');
+		}
+        }
 }
 
 void driveDisplay() {
@@ -68,6 +87,6 @@ void driveDisplay() {
 	// Pull down latch
 	digitalWrite(5, LOW);
 	
-	// Send new data and sleep a bit. FIXME use clock interrupt
+	// Send new data to SPI. Don't wait it to complete
 	SPDR = koira14[8*row_i+col_i];
 }
