@@ -19,16 +19,8 @@ static uint8_t koira14[] = {
 
 void setup() {
 	// Set output pins
-	pinMode (A5, OUTPUT);
-	pinMode (A4, OUTPUT);
-	pinMode (A3, OUTPUT);
-	pinMode (A2, OUTPUT);
-	pinMode (A1, OUTPUT);
-	pinMode (A0, OUTPUT);
-	pinMode (7, OUTPUT);
-	pinMode (6, OUTPUT);
-	pinMode (5, OUTPUT);
-	pinMode (4, OUTPUT);
+	DDRC = 0xFF;
+	DDRD = 0xFF;
 	// initialize SPI:
 	SPI.begin();
 }
@@ -37,17 +29,11 @@ uint8_t col_i = 0;
 uint8_t row_i = 0;
 
 void loop() {
-	static uint8_t row_latch;
-
 	// Main screen turn off
 	PORTC = 0xFF;
-	PORTD = 0xFF; // Put latch down
+	PORTD = 0xFF; // Latch data on pin 5 at the same time
 
-	// Latch new data
-	digitalWrite(5, LOW);
-	digitalWrite(5, HIGH);
-	
-	if (row_latch) {
+	if (col_i == 0) {
 		SPI.transfer(1 << row_i);
 
 		// Latch it
@@ -69,12 +55,12 @@ void loop() {
 	if (col_i > 7) {
 		col_i = 0;
 		row_i++;
-		row_latch = true;
 		if (row_i > 6) row_i = 0;
-	} else {
-		row_latch = false;
 	}
 
+	// Pull down latch
+	digitalWrite(5, LOW);
+	
 	// Send new data and sleep a bit. FIXME use clock interrupt
 	SPI.transfer(koira14[8*row_i+col_i]);
 	delayMicroseconds(200);
