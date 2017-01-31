@@ -11,7 +11,7 @@ the screen in action.
 ## Building
 
 Open Arduino IDE and build
-(telepulssi_driver.ino](telepulssi_driver.ino) Supported
+[telepulssi_driver.ino](telepulssi_driver.ino) Supported
 microcontrollers include all ATMega328 models. Can easily ported to
 other MCUs.
 
