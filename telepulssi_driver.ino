@@ -1,8 +1,10 @@
+
 /*
   Telepulssi TP-KN10 slave LED screen driver
 */
 
 #include <SPI.h>
+#include <TimerOne.h>
 
 static uint8_t koira14[] = {
   0x09, 0x00, 0x01, 0x00, 0x12, 0x04, 0x04, 0x04, 0x05, 0x00, 0x00, 0x00, 
@@ -23,12 +25,17 @@ void setup() {
 	DDRD = 0xFF;
 	// initialize SPI:
 	SPI.begin();
+	Timer1.initialize(200);
+	Timer1.attachInterrupt(driveDisplay);
 }
 
 uint8_t col_i = 0;
 uint8_t row_i = 0;
 
 void loop() {
+}
+
+void driveDisplay() {
 	// Main screen turn off
 	PORTC = 0xFF;
 	PORTD = 0xFF; // Latch data on pin 5 at the same time
@@ -62,6 +69,5 @@ void loop() {
 	digitalWrite(5, LOW);
 	
 	// Send new data and sleep a bit. FIXME use clock interrupt
-	SPI.transfer(koira14[8*row_i+col_i]);
-	delayMicroseconds(200);
+	SPDR = koira14[8*row_i+col_i];
 }
