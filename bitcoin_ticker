@@ -1,22 +1,42 @@
 #!/bin/sh -eu
 #
 # Connect to BitcoinWisdom web socket and display rates real time
+#
+# Requires `wscat` from Debian package `node-ws`. NB! Oh Lord would
+# you fix its output not to contain ANSI escape sequences.
+
+render_text() {
+    # Render using ImageMagick and pango to a frame of 40x7 pixels.
+    # Pad every LED segment with 3 pixels bar at the end.
+    # Output as raw binary bitmap.
+    convert -background white -gravity center +antialias +dither \
+	    -font Ubuntu -pointsize 6 -define pango:markup=false \
+            "pango:$1" \
+            -gravity north -crop '40x7+1+1!' -threshold 50% -flatten \
+	    -gravity west -splice 3x0+40+0 -splice 3x0+35+0 \
+	    -splice 3x0+30+0 -splice 3x0+25+0 -splice 3x0+20+0 \
+	    -splice 3x0+15+0 -splice 3x0+10+0 -splice 3x0+5+0 -flatten \
+	    mono:-
+}
+
+# Set serial port parameters if outputting to a char device
+test -c $1 && stty -F $1 raw 9600
 
 while sleep 60; do
     # Produce ping command to the web socket stream every minute
     echo say ping >&2
     echo ping
-done |
+done | {
+    # Synchronize screen
+    echo -n S
+    # Fetch the content via web socket
     wscat --connect 'https://d2.bitcoinwisdom.com/?symbol=bitfinexbtcusd' |
-    # Ugly colors in wscat output, get only the payload
-    sed -urn 's/^> .\[2K.\[E.\[34m< (.*).\[39m$/\1/p' |
-    # Get last trade in a packet and get its price
-    stdbuf -oL jq 'select(.type=="trades") | .trades | last | .price' |
-    while read -r price; do
-	convert -background white -gravity center +antialias +dither \
-		-font Ubuntu -pointsize 6 -define pango:markup=false \
-                "pango:`printf "$ %.2f" $price`" \
-                -gravity north -crop '40x7+1+1!' -threshold 50% \
-                -flatten /tmp/hinta.png
-	echo got trade $price >&2
-    done
+	# Ugly colors in wscat output, get only the payload
+	sed -urn 's/^> .\[2K.\[E.\[34m< (.*).\[39m$/\1/p' |
+	# Get last trade in a packet and get its price
+	stdbuf -oL jq 'select(.type=="trades") | .trades | last | .price' |
+	while read -r price; do
+	    render_text "`printf "$ %.2f" $price`"
+	    echo got trade $price >&2
+	done
+} >$1
