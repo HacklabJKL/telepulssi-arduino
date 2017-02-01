@@ -33,7 +33,7 @@ void setup() {
 	Serial.begin(9600);
 	// initialize SPI
 	SPI.begin();
-	Timer1.initialize(200);
+	Timer1.initialize(150);
 	Timer1.attachInterrupt(driveDisplay);
 }
 
