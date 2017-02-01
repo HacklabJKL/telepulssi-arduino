@@ -22,6 +22,8 @@ render_text() {
 # Set serial port parameters if outputting to a char device
 test -c $1 && stty -F $1 raw 9600
 
+old_price=0
+
 while sleep 60; do
     # Produce ping command to the web socket stream every minute
     echo say ping >&2
@@ -36,7 +38,15 @@ done | {
 	# Get last trade in a packet and get its price
 	stdbuf -oL jq 'select(.type=="trades") | .trades | last | .price' |
 	while read -r price; do
-	    render_text "`printf "$ %.2f" $price`"
+	    if test $old_price = $price; then
+		arrow='→'
+	    elif test 1 -eq `echo "$old_price < $price" | bc`; then
+		arrow='↑'
+	    else
+		arrow='↓'
+	    fi
+	    render_text "`printf "$ %.2f" $price`$arrow"
 	    echo got trade $price >&2
+	    old_price=$price
 	done
 } >$1
