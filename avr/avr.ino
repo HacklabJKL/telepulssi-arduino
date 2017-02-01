@@ -45,7 +45,7 @@ void loop() {
 	if (Serial.available() > 0) {
                 // read the incoming byte
                 uint8_t data = Serial.read();
-		if (data > 32) {
+		if (data >= 0x20) {
 			// If sending escape, reset buffer to beginning
 			buf_i = 0;
 			Serial.write('R');
