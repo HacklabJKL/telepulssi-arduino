@@ -4,13 +4,6 @@
 
 . "`dirname $0`/common.sh"
 
-# Set serial port parameters if outputting to a char device
-test -c $2 && stty -F $1 raw 9600
-
-{
-    # Synchronize screen
-    echo -n S
-    # Crop image if needed and make it monochrome
-    convert "$1" -background white +dither -gravity northwest \
-	    -crop '40x7+0+0!' -threshold 50% $byte_padding_magick mono:-
-} >"$2"
+convert "$1" -background white +dither -gravity northwest \
+	-crop '40x7+0+0!' -threshold 50% $byte_padding_magick mono:- |
+    send_to_screen "$2"

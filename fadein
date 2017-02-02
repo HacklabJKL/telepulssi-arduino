@@ -4,16 +4,9 @@
 
 . "`dirname $0`/common.sh"
 
-# Set serial port parameters if outputting to a char device
-test -c $1 && stty -F $1 raw 9600
-
-{
-    # Synchronize screen
-    echo -n S
-    # Fetch the content via web socket
-    for i in `seq 0 50`; do
-        sleep 0.05&
-	render_text "$2" $i
-        wait
-        done
-} >$1
+# Fade given text in
+for i in `seq 0 50`; do
+    sleep 0.05&
+    render_text "$2" $i
+    wait
+done | send_to_screen "$1"

@@ -4,16 +4,8 @@
 
 . "`dirname $0`/common.sh"
 
-# Set serial port parameters if outputting to a char device
-test -c $1 && stty -F $1 raw 9600
-
-{
-    # Synchronize screen
-    echo -n S
-    # Fetch the content via web socket
-    while true; do
-        sleep 1&
-	render_text "`date +%H:%M:%S`"
-        wait
-        done
-} >$1
+while true; do
+    sleep 1&
+    render_text "`date +%H:%M:%S`"
+    wait
+done | send_to_screen "$1"

@@ -18,3 +18,14 @@ render_text() {
 	    $byte_padding_magick mono:-
 }
 
+send_to_screen() {
+    # Set serial port parameters if outputting to a char device
+    test -c $1 && stty -F "$1" raw 9600
+
+    {
+	# Synchronize screen
+	echo -n S
+	# Passthrough
+	cat
+    } >"$1"
+}
