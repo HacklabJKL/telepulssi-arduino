@@ -2,19 +2,7 @@
 #
 # Shows current time on Telepulssi
 
-render_text() {
-    # Render using ImageMagick and pango to a frame of 40x7 pixels.
-    # Pad every LED segment with 3 pixels bar at the end.
-    # Output as raw binary bitmap.
-    convert -background white -gravity center +antialias +dither \
-	    -font Ubuntu -pointsize 6 -define pango:markup=false \
-            "pango:$1" \
-            -gravity north -crop '40x7+1+1!' -threshold 50% -flatten \
-	    -gravity west -splice 3x0+40+0 -splice 3x0+35+0 \
-	    -splice 3x0+30+0 -splice 3x0+25+0 -splice 3x0+20+0 \
-	    -splice 3x0+15+0 -splice 3x0+10+0 -splice 3x0+5+0 -flatten \
-	    mono:-
-}
+. "`dirname $0`/common.sh"
 
 # Set serial port parameters if outputting to a char device
 test -c $1 && stty -F $1 raw 9600
