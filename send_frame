@@ -3,7 +3,7 @@
 # Send any 40x7 frame to Telepulssi
 
 # Set serial port parameters if outputting to a char device
-test -c $1 && stty -F $1 raw 9600
+test -c $2 && stty -F $1 raw 9600
 
 # Pad every LED segment with 3 pixels bar at the end with ImageMagick
 # and make it black and white only.
