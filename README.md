@@ -34,7 +34,7 @@ stty -F /dev/ttyUSB0 raw 9600
 Naïve clock:
 
 ```sh
-./clock /dev/ttyUSB0
+./effects/clock /dev/ttyUSB0
 ```
 
 Show user supplied line on the LED screen:
