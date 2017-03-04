@@ -1,0 +1,23 @@
+#!/bin/sh -eu
+tail -n 1 -f $2 | stdbuf -oL cut -d ' ' -f 3- |
+{
+    echo -en '\xff'
+
+    while read -r rivi; do
+	convert -background white -gravity northwest +antialias +dither \
+	        -font Ubuntu -pointsize 6 -define pango:markup=false \
+	        "pango:$rivi" testi.png
+	width=$(echo `identify testi.png | cut -d ' ' -f 3 | cut -d x -f 1` + 39 | bc)
+
+	for pos in `seq 1 $width`; do
+	    sleep 0.1&
+	    convert testi.png \
+                    -splice 40x0+0+0 -crop "40x7+$pos+1!" -threshold 50% \
+                    -flatten -splice 3x0+40+0 -splice 3x0+35+0 \
+                    -splice 3x0+30+0 -splice 3x0+25+0 -splice 3x0+20+0 \
+                    -splice 3x0+15+0 -splice 3x0+10+0 -splice 3x0+5+0 \
+                    mono:-
+	   wait
+	done
+    done
+} >$1
