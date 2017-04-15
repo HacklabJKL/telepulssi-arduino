@@ -20,11 +20,16 @@ uint8_t *buf_back = buf_b;
 uint8_t col_i = 0;
 uint8_t row_i = 0;
 int buf_i = 0;
+volatile uint8_t may_flip = 0;
 
 void buf_swap(void) {
 	uint8_t *tmp = buf_front;
 	buf_front = buf_back;
 	buf_back = tmp;
+	if (may_flip) {
+		Serial.write('S');
+		may_flip = 0;
+	}
 }
 
 void setup() {
@@ -52,12 +57,13 @@ void loop() {
 	}
 
 	// Store the data to back buffer
+	may_flip = false;
 	buf_back[buf_i++] = data;
 	
 	// If we have reached the end of frame, flip buffers
 	if (buf_i == sizeof(buf_a)) {
 		buf_i = 0;
-		buf_swap();
+		may_flip = true;
 		Serial.write('K');
 	}
 }
@@ -91,7 +97,12 @@ void driveDisplay() {
 	if (col_i > 7) {
 		col_i = 0;
 		row_i++;
-		if (row_i > 6) row_i = 0;
+		if (row_i > 6) {
+			row_i = 0;
+			if (may_flip) {
+				buf_swap();
+			}
+		}
 	}
 
 	// Column driver latches on rising edge so we can already pull
