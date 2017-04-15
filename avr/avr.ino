@@ -37,7 +37,7 @@ void setup() {
 	DDRC = 0xFF;
 	DDRD = 0xFF;
 	// Initialize serial
-	Serial.begin(9600);
+	Serial.begin(115200);
 	// initialize SPI
 	SPI.begin();
 	Timer1.initialize(150);
