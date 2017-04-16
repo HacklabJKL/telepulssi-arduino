@@ -6,6 +6,7 @@
 import processing.serial.*;
 
 Serial myPort;
+int pwmPass=0;
 
 void initTelepulssi(String port) {
   myPort = new Serial(this, port, 115200);
@@ -13,22 +14,27 @@ void initTelepulssi(String port) {
 }
 
 void serialEvent(Serial myPort) {
+  final int pwmTable[] = {0, 1, 2, 4}; // Hard coded PWM duty cycle length table
   char inByte = myPort.readChar();
   if (inByte!='R' && inByte != 'S') return; // Wait only SYNC events
-  // Send to Telepulssi
-  loadPixels();
+
+  // Load new pixels only on start of the PWM cycle
+  if (pwmPass == 0) {
+    loadPixels();
+  }
+  
   byte[] out = new byte[7*8];
   for (int i=0; i<7*8; i++) {
     int pos = i*5;
     byte b = 0;
-    if ((pixels[pos+0] & 0x80) != 0) b |= 1 << 0;
-    if ((pixels[pos+1] & 0x80) != 0) b |= 1 << 1;
-    if ((pixels[pos+2] & 0x80) != 0) b |= 1 << 2;
-    if ((pixels[pos+3] & 0x80) != 0) b |= 1 << 3;
-    if ((pixels[pos+4] & 0x80) != 0) b |= 1 << 4;
+    for (int j=0; j<5; j++) {
+      int brightness = (pixels[pos+j] >> 6) & 0x3;
+      if (pwmPass < pwmTable[brightness]) b |= 1 << j;
+    }
     out[i]=b;
   }
   myPort.write(out);
+  pwmPass = (pwmPass+1) & 0x3;
 }
 
 void setup() {
