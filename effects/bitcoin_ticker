@@ -27,7 +27,7 @@ done |
 	    else
 		arrow='↓'
 	    fi
-	    render_text "`printf "$ %.2f" $price`$arrow"
+	    render_text "`printf "$%.1f" $price`$arrow"
 	    echo got trade $price >&2
 	    old_price=$price
 	done |
