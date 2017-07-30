@@ -50,7 +50,7 @@ uint8_t (*buf_back)[56] = buf_b;
 uint8_t col_i = 0;
 uint8_t row_i = 0;
 volatile uint8_t may_flip = 0;
-int pwm_planes[] = {0, 0, 1, 2}; // Run first plane 2 times
+int pwm_planes[] = {0, 0, 0, 0, 1, 1, 2}; // PWM "plane" running sequence
 int pwm_i = 0; // Current PWM cycle
 uint8_t *buf_pwm = buf_a[0];
 
@@ -79,7 +79,7 @@ void setup() {
 	Serial.begin(19200);
 	// initialize SPI
 	SPI.begin();
-	Timer1.initialize(100);
+	Timer1.initialize(50);
 	Timer1.attachInterrupt(driveDisplay);
 }
 
@@ -204,7 +204,7 @@ void driveDisplay() {
 		if (row_i > 6) {
 			row_i = 0;
 			pwm_i++;
-			if (pwm_i > 3) {
+			if (pwm_i >= (sizeof(pwm_planes)/sizeof(*pwm_planes))) {
 				pwm_i = 0;
 				if (may_flip) {
 					buf_swap();
