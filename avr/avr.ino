@@ -9,6 +9,7 @@
 #define ESCAPE          '~'  // Escape character. Go to command mode
 #define LITERAL_ESCAPE  '\0' // Escape followed by this is literal escape.
 #define CMD_FRAME       'F'  // Incoming frame
+#define CMD_PING        'P'  // Serial port ping
 
 #define MODE_NOOP    0 // No operation, ignore input until escape
 #define MODE_ESCAPE  1 // Escape received, wait for a command
@@ -116,6 +117,10 @@ void loop() {
 
 			// Do not flip until frame is complete
 			may_flip = false;			
+			break;
+		case CMD_PING:
+			mode = MODE_NOOP;
+			Serial.write('P');
 			break;
 		default:
 			// Go to no-op mode on invalid char
