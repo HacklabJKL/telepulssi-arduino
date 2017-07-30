@@ -15,12 +15,13 @@
 #define MODE_FRAME   2 // Receiving frame
 
 // Back buffer where to store PWM passes
-uint8_t buf_back[4][8*7];
+uint8_t buf_back[3][8*7];
 
 unsigned int byte_i;
 uint8_t bit_i;
 
 void print_plane(uint8_t *plane);
+void dump_planes(void);
 void serial_interrupt(uint8_t in);
 inline static void frame_store(uint8_t intensity);
 inline static void set_pixel(uint8_t *plane);
@@ -65,7 +66,7 @@ void serial_interrupt(uint8_t in)
 			// use sizeof(buf_a) because we want array length.
 			bzero(buf_back, sizeof(buf_back));
 			byte_i = 0;
-			bit_i = 0x10;			
+			bit_i = 0x01;
 			break;
 		default:
 			// Go to no-op mode on invalid char
@@ -85,10 +86,10 @@ void serial_interrupt(uint8_t in)
 		if (byte_i == 56) {
 			// Frame ready
 			mode = MODE_NOOP;
+			dump_planes();
 			print_plane(buf_back[0]);
 			print_plane(buf_back[1]);
 			print_plane(buf_back[2]);
-			print_plane(buf_back[3]);
 		}
 		break;
 	}
@@ -96,24 +97,23 @@ void serial_interrupt(uint8_t in)
 
 inline static void frame_store(uint8_t intensity)
 {
-	//printf("byte_i %d, bit_i %d\n", byte_i, bit_i);
+	printf("byte_i %d, bit_i %d\n", byte_i, bit_i);
 		
 	// Fallthrough switch
 	switch (intensity) {
 	case 3:
 		set_pixel(buf_back[0]);
-		set_pixel(buf_back[1]);
 	case 2:
-		set_pixel(buf_back[2]);
+		set_pixel(buf_back[1]);
 	case 1:
-		set_pixel(buf_back[3]);
+		set_pixel(buf_back[2]);
 	}
 
 	// Advance pointer
-	bit_i >>= 1;
-	if (bit_i == 0x00) {
+	bit_i <<= 1;
+	if (bit_i > 0x10) {
 		byte_i++;
-		bit_i = 0x10;
+		bit_i = 0x01;
 	}
 }
 
@@ -127,11 +127,23 @@ void print_plane(uint8_t *plane)
 {
 	for (int y = 0; y < 7; y++) {
 	     	for (int x = 0; x < 8; x++) {
-			for (uint8_t bit = 0x10; bit > 0; bit >>=1) {
+			for (uint8_t bit = 0x01; bit <= 0x10; bit <<= 1) {
 				putchar(plane[8*y+x] & bit ? 'X' : '-');
 			}
 		}
 		putchar('\n');
 	}
 	putchar('\n');
+}
+
+void dump_planes() {
+	fputs("{\n", stdout);
+	for (int p=0; p<3; p++) {
+		fputs("{ ", stdout);
+		for (int i=0; i<56; i++) {
+			printf("0x%02X, ", buf_back[p][i]);
+		}
+		fputs("},\n", stdout);		
+	}
+	fputs("};\n", stdout);
 }
