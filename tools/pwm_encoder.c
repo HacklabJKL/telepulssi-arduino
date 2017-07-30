@@ -15,14 +15,15 @@
 #define MODE_FRAME   2 // Receiving frame
 
 // Back buffer where to store PWM passes
-uint8_t buf_back[4][56];
+uint8_t buf_back[4][8*7];
 
-unsigned int byte_i  = 0;
-uint8_t bit_i = 0x10;
+unsigned int byte_i;
+uint8_t bit_i;
 
+void print_plane(uint8_t *plane);
 void serial_interrupt(uint8_t in);
 inline static void frame_store(uint8_t intensity);
-inline static void set_pixel(uint8_t *cycle);
+inline static void set_pixel(uint8_t *plane);
 
 int main(int argc, char **argv)
 {
@@ -63,6 +64,8 @@ void serial_interrupt(uint8_t in)
 			// Zero fill buffer. In production remember to
 			// use sizeof(buf_a) because we want array length.
 			bzero(buf_back, sizeof(buf_back));
+			byte_i = 0;
+			bit_i = 0x10;			
 			break;
 		default:
 			// Go to no-op mode on invalid char
@@ -70,6 +73,7 @@ void serial_interrupt(uint8_t in)
 			putchar('E');
 			break;
 		}
+		break;
 	case MODE_FRAME:
 		// Encode PWM from all four 2-bit pixels
 		frame_store(in >> 6);
@@ -81,8 +85,10 @@ void serial_interrupt(uint8_t in)
 		if (byte_i == 56) {
 			// Frame ready
 			mode = MODE_NOOP;
-			byte_i = 0;
-			fwrite(buf_back, 1, sizeof(buf_back), stdout);
+			print_plane(buf_back[0]);
+			print_plane(buf_back[1]);
+			print_plane(buf_back[2]);
+			print_plane(buf_back[3]);
 		}
 		break;
 	}
@@ -90,7 +96,7 @@ void serial_interrupt(uint8_t in)
 
 inline static void frame_store(uint8_t intensity)
 {
-	// DEBUG printf("byte_i %d, bit_i %d\n", byte_i, bit_i);
+	//printf("byte_i %d, bit_i %d\n", byte_i, bit_i);
 		
 	// Fallthrough switch
 	switch (intensity) {
@@ -111,7 +117,21 @@ inline static void frame_store(uint8_t intensity)
 	}
 }
 
-inline static void set_pixel(uint8_t *cycle)
+inline static void set_pixel(uint8_t *plane)
 {
-	cycle[byte_i] |= bit_i;
+	plane[byte_i] |= bit_i;
+}
+
+// Function for validating the results
+void print_plane(uint8_t *plane)
+{
+	for (int y = 0; y < 7; y++) {
+	     	for (int x = 0; x < 8; x++) {
+			for (uint8_t bit = 0x10; bit > 0; bit >>=1) {
+				putchar(plane[8*y+x] & bit ? 'X' : '-');
+			}
+		}
+		putchar('\n');
+	}
+	putchar('\n');
 }
