@@ -55,6 +55,11 @@ int pwm_planes[] = {0, 0, 0, 0, 0, 1, 1, 2}; // PWM "plane" running sequence
 int pwm_i = 0; // Current PWM cycle
 uint8_t *buf_pwm = buf_a[0];
 
+// Hardware configuration
+uint8_t pin_col[] = {6, 7, A0, A1, A2, A3, A4, A5};
+#define PIN_ROW_LATCH 4
+#define PIN_COL_LATCH 5
+
 // Serial access
 unsigned int byte_i;
 uint8_t bit_i;
@@ -174,25 +179,24 @@ inline static void set_pixel(uint8_t *plane)
 }
 
 void driveDisplay() {
+	static int cur_pin = pin_col[0];
+	
 	// Main screen turn off.
-	PORTC = 0xFF;
-	PORTD = 0xFF; // Latch data on pin 5 at the same time
+	digitalWrite(cur_pin, HIGH);
+	digitalWrite(PIN_COL_LATCH, HIGH);
 
 	// Switch the row on row driver if needed
 	if (col_iter == 0) {
 		SPI.transfer(1 << row_i);
 
 		// Latch it
-		digitalWrite(4, LOW);
-		digitalWrite(4, HIGH);
+		digitalWrite(PIN_ROW_LATCH, LOW);
+		digitalWrite(PIN_ROW_LATCH, HIGH);
 	}
 	
 	// Main screen turn on!
-	if (col_i < 2) {
-		PORTD = ~((1 << 6) << col_i);
-	} else {
-		PORTC = ~(1 << (col_i-2));
-	}
+	cur_pin = pin_col[col_i];
+	digitalWrite(cur_pin, LOW);
 	
 	// After turning on the screen, we have "plenty" of CPU cycles
 	// to spend. Preparing a new segment to display.
@@ -225,7 +229,7 @@ void driveDisplay() {
 
 	// Column driver latches on rising edge so we can already pull
 	// it down.
-	digitalWrite(5, LOW);
+	digitalWrite(PIN_COL_LATCH, LOW);
 	
 	// Send new data via SPI. Don't need to wait it to complete
 	// because it completes before the next timer interrupt.
