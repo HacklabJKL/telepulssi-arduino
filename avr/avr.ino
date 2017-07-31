@@ -5,6 +5,9 @@
 #include <SPI.h>
 #include <TimerOne.h>
 
+// Helper functions. NB! ARRAY_SIZE doesn't check if it's an array.
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
 // Serial protocol fundamentals
 #define ESCAPE          '~'  // Escape character. Go to command mode
 #define LITERAL_ESCAPE  '\0' // Escape followed by this is literal escape.
@@ -79,10 +82,15 @@ void buf_swap(void) {
 
 void setup() {
 	// Set output pins for LED display
-	DDRC = 0xFF;
-	DDRD = 0xFF;
+	for (int i=0; i<ARRAY_SIZE(pin_col); i++) {
+		pinMode(pin_col[i], OUTPUT);
+	}
+	pinMode(PIN_ROW_LATCH, OUTPUT);
+	pinMode(PIN_COL_LATCH, OUTPUT);
+
 	// Initialize serial
 	Serial.begin(19200);
+
 	// initialize SPI
 	SPI.begin();
 	Timer1.initialize(50);
@@ -216,7 +224,7 @@ void driveDisplay() {
 		if (row_i > 6) {
 			row_i = 0;
 			pwm_i++;
-			if (pwm_i >= (sizeof(pwm_planes)/sizeof(*pwm_planes))) {
+			if (pwm_i >= ARRAY_SIZE(pwm_planes)) {
 				pwm_i = 0;
 				if (may_flip) {
 					buf_swap();
