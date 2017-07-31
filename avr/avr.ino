@@ -50,7 +50,7 @@ uint8_t (*buf_back)[56] = buf_b;
 uint8_t col_i = 0;
 uint8_t row_i = 0;
 volatile uint8_t may_flip = 0;
-int pwm_planes[] = {0, 0, 0, 0, 1, 1, 2}; // PWM "plane" running sequence
+int pwm_planes[] = {0, 0, 0, 0, 0, 1, 1, 2}; // PWM "plane" running sequence
 int pwm_i = 0; // Current PWM cycle
 uint8_t *buf_pwm = buf_a[0];
 
