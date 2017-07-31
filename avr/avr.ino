@@ -48,6 +48,7 @@ static uint8_t buf_b[3][56];
 uint8_t (*buf_front)[56] = buf_a;
 uint8_t (*buf_back)[56] = buf_b;
 uint8_t col_i = 0;
+uint8_t col_iter = 0; // Anti-ghosting 
 uint8_t row_i = 0;
 volatile uint8_t may_flip = 0;
 int pwm_planes[] = {0, 0, 0, 0, 0, 1, 1, 2}; // PWM "plane" running sequence
@@ -178,7 +179,7 @@ void driveDisplay() {
 	PORTD = 0xFF; // Latch data on pin 5 at the same time
 
 	// Switch the row on row driver if needed
-	if (col_i == 0) {
+	if (col_iter == 0) {
 		SPI.transfer(1 << row_i);
 
 		// Latch it
@@ -198,8 +199,15 @@ void driveDisplay() {
 	
 	// Go to the next column. If reached the end of line, jump to next.
 	col_i++;
-	if (col_i > 7) {
-		col_i = 0;
+	if (col_i > 7) col_i=0;
+	col_iter++;
+	if (col_iter > 7) {
+		// Anti-ghosting measure: Start drawing the row from
+		// different column every time.
+		col_i++;
+		if (col_i > 7) col_i=0;
+
+		col_iter = 0;
 		row_i++;
 		if (row_i > 6) {
 			row_i = 0;
