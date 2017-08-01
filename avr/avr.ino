@@ -3,7 +3,6 @@
 */
 
 #include <SPI.h>
-#include <TimerOne.h>
 
 // Helper functions. NB! ARRAY_SIZE doesn't check if it's an array.
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -13,10 +12,12 @@
 #define LITERAL_ESCAPE  '\0' // Escape followed by this is literal escape.
 #define CMD_FRAME       'F'  // Incoming frame
 #define CMD_PING        'P'  // Serial port ping
+#define CMD_PWM         'W'  // PWM parameter setup
 
 #define MODE_NOOP    0 // No operation, ignore input until escape
 #define MODE_ESCAPE  1 // Escape received, wait for a command
 #define MODE_FRAME   2 // Receiving frame
+#define MODE_PWM     3 // PWM parameter setup
 
 // Hacklab logo at startup
 static uint8_t buf_a[3][56] = {
@@ -54,7 +55,7 @@ uint8_t col_i = 0;
 uint8_t col_iter = 0; // Anti-ghosting 
 uint8_t row_i = 0;
 volatile uint8_t may_flip = 0;
-int pwm_lengths[] = { 250, 100, 40 }; // microseconds per plane
+int pwm_lengths[] = { 0x30, 0x10, 0x06 }; // PWM cycle lengths
 int pwm_i = 0; // Current PWM cycle
 uint8_t *buf_pwm = buf_a[0];
 
@@ -81,20 +82,26 @@ void buf_swap(void) {
 }
 
 void setup() {
-	// Set output pins for LED display
+	// Enable output pins for LED display
 	for (int i=0; i<ARRAY_SIZE(pin_col); i++) {
 		pinMode(pin_col[i], OUTPUT);
 	}
 	pinMode(PIN_ROW_LATCH, OUTPUT);
 	pinMode(PIN_COL_LATCH, OUTPUT);
 
-	// Initialize serial
+	// Initialize serial and SPI
 	Serial.begin(19200);
-
-	// initialize SPI
 	SPI.begin();
-	Timer1.initialize(pwm_lengths[0]);
-	Timer1.attachInterrupt(driveDisplay);
+
+	// Timer magic
+	cli();
+	TCCR1A = 0; // Do not toggle pins
+	TCCR1B = (1 << CS11 | 1 << CS10); // Clock divider 64, 64/16e6 = 40µs cycle
+	TCCR1C = 0; // not forcing output compare
+	TCNT1 = 0; // set timer counter initial value (16 bit value)
+	TIMSK1 = 1 << OCIE1A; // enable timer compare match 1A interrupt
+	OCR1A = 1; // Go to the interrupt vector ASAP
+	sei();
 }
 
 void loop() {
@@ -136,6 +143,10 @@ void loop() {
 			mode = MODE_NOOP;
 			Serial.write('P');
 			break;
+		case CMD_PWM:
+			mode = MODE_PWM;
+			byte_i = 0;
+			break;
 		default:
 			// Go to no-op mode on invalid char
 			mode = MODE_NOOP;
@@ -157,6 +168,15 @@ void loop() {
 			may_flip = true;
 			Serial.write('K');
 		}
+		break;
+	case MODE_PWM:
+		if (byte_i<3) {
+			pwm_lengths[byte_i] = in;
+		} else {
+			TCCR1B = in;
+			mode = MODE_NOOP;
+		}
+		byte_i++;
 		break;
 	}
 }
@@ -186,11 +206,12 @@ inline static void set_pixel(uint8_t *plane)
 	plane[byte_i] |= bit_i;
 }
 
-void driveDisplay() {
+ISR(TIMER1_COMPA_vect)
+{
 	static int cur_pin = pin_col[0];
-
+	
 	// Set run length
-	Timer1.setPeriod(pwm_lengths[pwm_i]);
+	OCR1A = pwm_lengths[pwm_i];
 	
 	// Main screen turn off.
 	digitalWrite(cur_pin, HIGH);
@@ -208,6 +229,7 @@ void driveDisplay() {
 	// Main screen turn on!
 	cur_pin = pin_col[col_i];
 	digitalWrite(cur_pin, LOW);
+	TCNT1 = 0;
 	
 	// After turning on the screen, we have "plenty" of CPU cycles
 	// to spend. Preparing a new segment to display.
