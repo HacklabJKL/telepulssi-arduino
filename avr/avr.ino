@@ -54,7 +54,7 @@ uint8_t col_i = 0;
 uint8_t col_iter = 0; // Anti-ghosting 
 uint8_t row_i = 0;
 volatile uint8_t may_flip = 0;
-int pwm_planes[] = {0, 0, 1, 0, 0, 1, 0, 2}; // PWM "plane" running sequence
+int pwm_lengths[] = { 250, 100, 40 }; // microseconds per plane
 int pwm_i = 0; // Current PWM cycle
 uint8_t *buf_pwm = buf_a[0];
 
@@ -93,7 +93,7 @@ void setup() {
 
 	// initialize SPI
 	SPI.begin();
-	Timer1.initialize(50);
+	Timer1.initialize(pwm_lengths[0]);
 	Timer1.attachInterrupt(driveDisplay);
 }
 
@@ -188,6 +188,9 @@ inline static void set_pixel(uint8_t *plane)
 
 void driveDisplay() {
 	static int cur_pin = pin_col[0];
+
+	// Set run length
+	Timer1.setPeriod(pwm_lengths[pwm_i]);
 	
 	// Main screen turn off.
 	digitalWrite(cur_pin, HIGH);
@@ -224,14 +227,14 @@ void driveDisplay() {
 		if (row_i > 6) {
 			row_i = 0;
 			pwm_i++;
-			if (pwm_i >= ARRAY_SIZE(pwm_planes)) {
+			if (pwm_i >= ARRAY_SIZE(pwm_lengths)) {
 				pwm_i = 0;
 				if (may_flip) {
 					buf_swap();
 				}
 			}
 			// Switch to next PWM cycle
-			buf_pwm = buf_front[pwm_planes[pwm_i]];
+			buf_pwm = buf_front[pwm_i];
 		}
 	}
 
