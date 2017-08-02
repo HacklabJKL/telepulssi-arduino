@@ -56,7 +56,6 @@ uint8_t row_i = 0;
 volatile uint8_t may_flip = 0;
 int pwm_lengths[] = { 0x30, 0x10, 0x06 }; // PWM cycle lengths
 int pwm_i = 0; // Current PWM cycle
-uint8_t *buf_pwm = buf_a[0];
 
 // Hardware configuration
 uint8_t pin_col[] = {6, 7, A0, A1, A2, A3, A4, A5};
@@ -211,44 +210,56 @@ ISR(TIMER1_COMPA_vect)
 	
 	// Set run length
 	OCR1A = pwm_lengths[pwm_i];
+
+	// Are we moving to next segment?
+	if (pwm_i == 0) {
+		// Blank screen
+		digitalWrite(cur_pin, HIGH);
+		digitalWrite(PIN_COL_LATCH, HIGH);
+
+		// Switch the row on row driver if needed
+		if (col_i == 0) {
+			SPI.transfer(1 << row_i);
+
+			// Latch it
+			digitalWrite(PIN_ROW_LATCH, LOW);
+			digitalWrite(PIN_ROW_LATCH, HIGH);
+		}
 	
-	// Main screen turn off.
-	digitalWrite(cur_pin, HIGH);
-	digitalWrite(PIN_COL_LATCH, HIGH);
-
-	// Switch the row on row driver if needed
-	if (col_i == 0) {
-		SPI.transfer(1 << row_i);
-
-		// Latch it
-		digitalWrite(PIN_ROW_LATCH, LOW);
-		digitalWrite(PIN_ROW_LATCH, HIGH);
+		// Main screen turn on!
+		cur_pin = pin_col[col_i];
+		digitalWrite(cur_pin, LOW);
+	} else {
+		// Just latch new data in without blanking.
+		digitalWrite(PIN_COL_LATCH, HIGH);
 	}
-	
-	// Main screen turn on!
-	cur_pin = pin_col[col_i];
-	digitalWrite(cur_pin, LOW);
+
+	// Restart timer counter
 	TCNT1 = 0;
 	
-	// After turning on the screen, we have "plenty" of CPU cycles
-	// to spend. Preparing a new segment to display.
-	
-	// Go to the next column. If reached the end of line, jump to next.
-	col_i++;
-	if (col_i > 7) {
-		col_i = 0;
-		row_i++;
-		if (row_i > 6) {
-			row_i = 0;
-			pwm_i++;
-			if (pwm_i >= ARRAY_SIZE(pwm_lengths)) {
-				pwm_i = 0;
+	/* After turning on the screen, we have "plenty" of CPU cycles
+	 * to spend. Preparing a new segment to display.
+	 *
+	 * Iterating order:
+	 *
+	 * 1. PWM planes of a single LED segment row
+	 * 2. Segments rows from left to right
+	 * 3. Rows
+	 * 4. Flip frame, if available, otherwise; repeat.
+	 */
+	pwm_i++;
+	if (pwm_i >= ARRAY_SIZE(pwm_lengths)) {
+		pwm_i = 0;
+		col_i++;
+		if (col_i > 7) {
+			col_i = 0;
+			row_i++;
+			if (row_i > 6) {
+				row_i = 0;
 				if (may_flip) {
 					buf_swap();
 				}
 			}
-			// Switch to next PWM cycle
-			buf_pwm = buf_front[pwm_i];
 		}
 	}
 
@@ -258,5 +269,5 @@ ISR(TIMER1_COMPA_vect)
 	
 	// Send new data via SPI. Don't need to wait it to complete
 	// because it completes before the next timer interrupt.
-	SPDR = buf_pwm[8*row_i+col_i];
+	SPDR = buf_front[pwm_i][8*row_i+col_i];
 }
