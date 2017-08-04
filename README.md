@@ -19,11 +19,11 @@ To see how to wire TP-KN10 to Arduino, see [pinout](pinout.md).
 
 ## Processing
 
-[https://processing.org/](Processing) is the most fun way to control
+[Processing](https://processing.org/) is the most fun way to control
 Telepulssi. Processing version 3.3 or newer is recommended.
 
 Open
-[telepulssi_processing/telepulssi_processing.pde](telepulssi_processing.pde)
+[telepulssi_processing.pde](telepulssi_processing/telepulssi_processing.pde)
 to Processing, change serial port name, hack and run! :-)
 
 ## UDP interface
