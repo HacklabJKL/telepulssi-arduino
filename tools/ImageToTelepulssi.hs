@@ -14,7 +14,7 @@ main = do
       -- Load image or fail
       img <- readImage f >>= either fail return
       -- Convert to grayscale and then to Telepulssi format
-      bs <- telepulssify $ dynToGrayscale img
+      bs <- either fail return $ telepulssify $ dynToGrayscale img
       -- Push binary to stdout
       B.putStr bs
     _   -> fail "Image file required"

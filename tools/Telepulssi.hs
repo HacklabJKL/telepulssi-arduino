@@ -16,11 +16,10 @@ binarize _ _ _ v = putWord8 2 $ v `shiftR` 6
 escape = B.intercalate "~\0" . B.split '~'
 
 -- |Converts grayscale image to serial format.
-telepulssify :: Monad m => Image Pixel8 -> m B.ByteString
-telepulssify img = do
-  -- Check dimensions
-  when (imageWidth img /= 40 || imageHeight img /= 7) $ fail "Image must be 40×7"
-  -- Generate raw binary 2-bit grayscale data
-  let binaryImg = runPut $ runBitPut $ pixelFoldM binarize () img
-  -- Produce final serial line data
-  return $ "~F" `B.append` escape binaryImg
+telepulssify :: Image Pixel8 -> Either String B.ByteString
+telepulssify img = case (imageWidth img, imageHeight img) of
+  -- Generate raw binary 2-bit grayscale data and produce final serial
+  -- data.
+  (40, 7) -> let binaryImg = runPut $ runBitPut $ pixelFoldM binarize () img
+             in Right $ "~F" `B.append` escape binaryImg
+  _ -> Left "Image must be 40×7"
