@@ -58,9 +58,9 @@ int pwm_lengths[] = { 0x30, 0x10, 0x06 }; // PWM cycle lengths
 int pwm_i = 0; // Current PWM cycle
 
 // Hardware configuration
-uint8_t pin_col[] = {6, 7, A0, A1, A2, A3, A4, A5};
-#define PIN_ROW_LATCH 4
-#define PIN_COL_LATCH 5
+uint8_t pin_col[] = {5, A0, 4, A1, 3, A2, 2, A3};
+#define PIN_ROW_LATCH 6
+#define PIN_COL_LATCH 8
 
 // Serial access
 unsigned int byte_i;
