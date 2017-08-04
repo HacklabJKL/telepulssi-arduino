@@ -8,4 +8,4 @@ while true; do
     sleep 1&
     render_text "`date +%H:%M:%S`"
     wait
-done | send_to_screen "$1"
+done | send_to_screen "$1" "$2"
