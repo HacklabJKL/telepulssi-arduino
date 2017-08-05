@@ -26,6 +26,8 @@ Open
 [telepulssi_processing.pde](telepulssi_processing/telepulssi_processing.pde)
 to Processing, change serial port name, hack and run! :-)
 
+Also, it has Telepulssi emulator!
+
 ## UDP interface
 
 When running UDP interface, first set serial port settings (replace
