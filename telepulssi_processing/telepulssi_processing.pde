@@ -1,6 +1,5 @@
 /**
  * Telepulssi template for Processing.
- * Use your mouse pointer to draw pixels on Telepulssi
  */
 
 Telepulssi telepulssi;

@@ -25,7 +25,7 @@ public class Telepulssi extends PApplet {
     
     // Serial traffic distorts the PWM so we don't want to do it too often.
     source.frameRate(30);
-    frameRate(30);
+    if (preview) frameRate(30);
   }
 
   void settings() {
