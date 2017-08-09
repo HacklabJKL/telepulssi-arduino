@@ -7,7 +7,7 @@ import java.text.*;
 
 Telepulssi telepulssi;
 final static DateFormat fmt = new SimpleDateFormat("HHmmss");
-PFont font;
+PImage logo;
 
 public void settings() {
   // Telepulssi screen resolution is 40x7
@@ -18,9 +18,10 @@ void setup() {
   // First set up your stuff.
   background(0);
   fill(255);
-  font = loadFont("Ubuntu-10.vlw");
+  PFont font = loadFont("Ubuntu-10.vlw");
   textFont(font);
-    
+  logo = loadImage("logo.png");
+  
   // Initialize real Telepulssi, emulated one, or both. Pick the on you like to use
   telepulssi = new Telepulssi(this, true, "/dev/ttyACM0"); // Preview and real hardware
   //telepulssi = new Telepulssi(this, true, null); // Preview only
@@ -31,14 +32,43 @@ void setup() {
 }
 
 void draw() {
+  // Clear screen
+  background(0);
+
+  // Angle function which pauses for a moment at zero. Used for pausing to clock position.
+  final float phaseShift = 1.1;
+  final float speed = 0.0001;
+  final int pause = 40;
+  float angle = 2*PI*pow(sin((speed*millis()) % (PI/2)),pause) + phaseShift;
+
+  float y = -0.5*(sin(-angle)+1)*(logo.height-height);
+  float x = -0.5*(cos(angle)+1)*(logo.width-width);
+
+  // Rotate the whole thing
+  translate((int)x,(int)y);
+
+  // Draw clock in some coordinates in the logo
+  pushMatrix();
+  translate(16,0);
+  drawClock();
+  popMatrix();
+  
+  drawLogo();
+  
+  // Finally update the screen and preview.
+  telepulssi.update();
+}
+
+void drawLogo() {
+  image(logo,0,0);
+}
+
+void drawClock() {
   long ts = System.currentTimeMillis();
   String now = fmt.format(new Date(ts));
   String next = fmt.format(new Date(ts+1000));
   double phase = (double)(ts % 1000) / 1000;
-  
-  // Clear screen
-  background(0);
-  
+    
   // Draw actual digits
   drawDigit(now, next, phase, 0, 0);
   drawDigit(now, next, phase, 1, 6);
@@ -52,9 +82,6 @@ void draw() {
     text(':', 12, 6);
     text(':', 26, 6);
   }
-  
-  // Finally update the screen and preview.
-  telepulssi.update();
 }
 
 void drawDigit(String a, String b, double phase, int i, int pos) {
