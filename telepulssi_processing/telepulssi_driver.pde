@@ -34,8 +34,6 @@ public class Telepulssi extends PApplet {
 
   void setup() {
     noStroke();
-    println(source.frameRate);
-    frameRate(source.frameRate);
     source.loadPixels();
   }
 
