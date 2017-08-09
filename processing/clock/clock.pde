@@ -17,6 +17,7 @@ public void settings() {
 void setup() {  
   // First set up your stuff.
   background(0);
+  fill(255);
   font = loadFont("Ubuntu-10.vlw");
   textFont(font);
     
@@ -35,9 +36,8 @@ void draw() {
   String next = fmt.format(new Date(ts+1000));
   double phase = (double)(ts % 1000) / 1000;
   
-  // Do something fancy like rotating text
+  // Clear screen
   background(0);
-  fill(255);
   
   // Draw actual digits
   drawDigit(now, next, phase, 0, 0);
@@ -52,8 +52,6 @@ void draw() {
     text(':', 12, 6);
     text(':', 26, 6);
   }
-
-  //println(phase);
   
   // Finally update the screen and preview.
   telepulssi.update();
