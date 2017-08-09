@@ -22,8 +22,8 @@ void setup() {
   logo = loadImage("logo.png");
 
   // Initialize real Telepulssi, emulated one, or both. Pick the on you like to use
-  telepulssi = new Telepulssi(this, true, "/dev/ttyACM0"); // Preview and real hardware
-  //telepulssi = new Telepulssi(this, true, null); // Preview only
+  //telepulssi = new Telepulssi(this, true, "/dev/ttyACM0"); // Preview and real hardware
+  telepulssi = new Telepulssi(this, true, null); // Preview only
   //telepulssi = new Telepulssi(this, false, "/dev/ttyACM0"); // Real hardware only
 
   // Hide the original window
@@ -49,7 +49,7 @@ void draw() {
   
   // Draw clock in some coordinates in the logo
   pushMatrix();
-  translate(16, 0);
+  translate(15, 0);
   drawClock();
   popMatrix();
 
@@ -85,9 +85,9 @@ void drawClock() {
 
   // Draw nice gradient to rolling numbers
   fill(0,70);
-  rect(0, 7, 40, 2);
+  rect(0, 7, 40, 1);
   fill(0);
-  rect(0, 9, 40, 5);
+  rect(0, 8, 40, 7);
 }
 
 void drawDigit(String a, String b, double phase, int i, int pos) {
@@ -103,9 +103,5 @@ void drawDigit(String a, String b, double phase, int i, int pos) {
   yb = ya+8;
 
   text(a.charAt(i), pos, ya);
-  if (yb < 14) {
-    println(yb);
-    // Draw next digit only if visible
-    text(b.charAt(i), pos, yb);
-  }
+  text(b.charAt(i), pos, yb);
 }
