@@ -67,7 +67,7 @@ void drawClock() {
   long ts = System.currentTimeMillis();
   String now = fmt.format(new Date(ts));
   String next = fmt.format(new Date(ts+1000));
-  double phase = (double)(ts % 1000) / 1000;
+  float phase = (float)(ts % 1000) / 1000;
 
   // Draw actual digits
   drawDigit(now, next, phase, 0, 0);
@@ -90,18 +90,19 @@ void drawClock() {
   rect(0, 8, 40, 7);
 }
 
-void drawDigit(String a, String b, double phase, int i, int pos) {
-  int ya, yb;
+void drawDigit(String a, String b, float phase, int i, float pos) {
+  float textPhase;
   if (a.charAt(i) == b.charAt(i)) {
     // Position static
-    ya = 7;
+    textPhase = 0;
   } else {
     // Use textPhase which stops for a moment
-    double textPhase = phase < 0.5 ? 0 : (phase-0.5)*2;
-    ya = (int)(-textPhase*8)+7;
+    textPhase = phase < 0.5 ? 0 : (phase-0.5)*2;
   }
-  yb = ya+8;
 
-  text(a.charAt(i), pos, ya);
-  text(b.charAt(i), pos, yb);
+  pushMatrix();
+  translate(pos, -textPhase*8);
+  text(a.charAt(i), 0, 7);
+  text(b.charAt(i), 0, 15);
+  popMatrix();
 }
