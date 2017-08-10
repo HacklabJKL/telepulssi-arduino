@@ -17,7 +17,7 @@ public void settings() {
 void setup() {  
   // First set up your stuff.
   noStroke();
-  PFont font = loadFont("Ubuntu-10.vlw");
+  PFont font = loadFont("Ubuntu-Medium-10.vlw");
   textFont(font);
   logo = loadImage("logo.png");
 
@@ -36,7 +36,7 @@ void draw() {
   fill(255);
 
   // Angle function which pauses for a moment at zero. Used for pausing to clock position.
-  final float phaseShift = 1.1;
+  final float phaseShift = PI/2;
   final float speed = 0.0001;
   final int pause = 40;
   float angle = 2*PI*pow(sin((speed*millis()) % (PI/2)), pause) + phaseShift;
@@ -45,7 +45,7 @@ void draw() {
   float x = -0.5*(cos(angle)+1)*(logo.width-width);
 
   // Rotate the whole thing
-  translate((int)x,(int)y);
+  translate(x,y);
   
   // Draw clock in some coordinates in the logo
   pushMatrix();
@@ -79,8 +79,8 @@ void drawClock() {
 
   // Blinking digits
   if ((int)(ts/1000) % 2 == 0) {
-    text(':', 12, 6);
-    text(':', 26, 6);
+    text(':', 11, 6);
+    text(':', 25, 6);
   }
 
   // Draw nice gradient to rolling numbers
