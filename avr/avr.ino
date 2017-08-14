@@ -97,12 +97,11 @@ void setup() {
 	// Timer magic
 	cli();
 	TCCR1A = 0;
-	TCCR1B = _BV(CS11) | _BV(CS10); // Clock divider 64, 64/16e6 = 40µs cycle
-	TCNT1 = 0; // set timer counter initial value (16 bit value)
-	TIMSK1 = _BV(OCIE1A); // enable timer compare match 1A interrupt
-	OCR1A = 1; // Go to the interrupt vector ASAP
+	TCCR1B = _BV(CS11) | _BV(CS10); // Clock divider 64, 64/16e6 = 40µs tick
+	TCNT1 = 0; // Set timer counter initial value (16 bit value)
+	TIMSK1 = _BV(OCIE1A); // Go to interrupt vector when timer reaches target
+	OCR1A = 1; // Go to the interrupt vector ASAP after startup
 	sei();
-
 }
 
 void loop() {
@@ -209,9 +208,7 @@ inline static void set_pixel(uint8_t *plane)
 
 ISR(TIMER1_COMPA_vect)
 {
-	// Force screen off if not yet happened (force OC1A on)
-	TCCR1A = (1 << COM1A1);
-	TCCR1C = (1 << FOC1A);
+	// Screen is off when we hit here (OC1A has been set LOW)
   
 	// Load new data to LED driver
 	digitalWrite(PIN_COL_LATCH, HIGH);
@@ -232,18 +229,19 @@ ISR(TIMER1_COMPA_vect)
 		digitalWrite(PIN_COL_BIT0, col_i & 0b001);
       	}
 
-	// Main screen turn on! (force OC1A on)
-	TCCR1A = (1 << COM1A1) | (1 << COM1A0);
-	TCCR1C = (1 << FOC1A);
+	// Main screen turn on! (Use Compare Output magic with OC1A)
+	TCCR1A = _BV(COM1A1) | _BV(COM1A0); // Set HIGH on match
+	TCCR1C = _BV(FOC1A); // Force match (turns the screen on)
+	TCCR1A = _BV(COM1A1); // On timer match set turn off the screen.
   
-	// Say we want to turn off when we hit the target even if interrupt doesn't run
-	TCCR1A = (1 << COM1A1);
-
 	// Restart timer counter
 	TCNT1 = 0;
 	
 	// Set run length
 	OCR1A = pwm_lengths[pwm_i];
+
+	// We have done all time-critical stuff for now
+	sei();
 	
 	/* After turning on the screen, we have "plenty" of CPU cycles
 	 * to spend. Preparing a new segment to display.
@@ -255,7 +253,6 @@ ISR(TIMER1_COMPA_vect)
 	 * 3. Rows
 	 * 4. Flip frame, if available, otherwise; repeat.
 	 */
-	sei();
 	pwm_i++;
 	if (pwm_i >= ARRAY_SIZE(pwm_lengths)) {
 		pwm_i = 0;
