@@ -84,10 +84,8 @@ void drawClock() {
   }
 
   // Draw nice gradient to rolling numbers
-  fill(0,70);
-  rect(0, 7, 40, 1);
   fill(0);
-  rect(0, 8, 40, 7);
+  rect(0, 7.5, 40, 8);
 }
 
 void drawDigit(String a, String b, float phase, int i, float pos) {
