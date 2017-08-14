@@ -56,6 +56,7 @@ uint8_t row_i = 0;
 volatile uint8_t may_flip = 0;
 volatile uint16_t pwm_lengths[] = { 0x30, 0x10, 0x06 }; // PWM cycle lengths
 uint8_t pwm_i = 0; // Current PWM cycle
+volatile uint8_t spi_row_change = false;
 
 // Hardware configuration
 #define PIN_COL_BIT0 A2
@@ -94,9 +95,11 @@ void setup() {
 	pinMode(MOSI, OUTPUT);
 	pinMode(SCK, OUTPUT);
 
-	// Initialize serial and SPI
+	// Initialize serial via USB
 	Serial.begin(19200);
-	SPCR = _BV(SPE) | _BV(MSTR) | _BV(SPR0); // SPI master, clock rate fck/16
+
+	// Configure SPI as master, clock rate fck/16, enable interrupts	
+	SPCR = _BV(SPIE) | _BV(SPE) | _BV(MSTR) | _BV(SPR0);
 	
 	// Timer magic
 	cli();
@@ -220,16 +223,11 @@ ISR(TIMER1_COMPA_vect)
 	// Are we moving to next segment?
 	if (pwm_i == 0) {
 		if (col_i == 0) {
-			// Busy-write
+			// Switch the row on row driver first and
+			// postpone turning on the screen.
+			spi_row_change = true;
 			SPDR = 1 << row_i;
-			while(!(SPSR & (1<<SPIF)));
-
-			// Latch the written row info
-			digitalWrite(PIN_ROW_LATCH, LOW);
-			digitalWrite(PIN_ROW_LATCH, HIGH);
-
 			pick_column();
-			screen_on();
 		} else {
 			// Switch column and turn on the screen.
 			pick_column();
@@ -297,4 +295,17 @@ static void screen_on(void)
 	// Send new data via SPI. Don't need to wait it to complete
 	// because it completes before the next timer interrupt.
 	SPDR = buf_front[pwm_i][8*row_i+col_i];
+}
+
+// SPI interrupt is only used when changing the row. Writes to LED
+// register are guaranteed (I hope) to complete in time.
+ISR(SPI_STC_vect)
+{
+	if (spi_row_change) {
+		// Latch the written row info
+		digitalWrite(PIN_ROW_LATCH, LOW);
+		digitalWrite(PIN_ROW_LATCH, HIGH);
+		spi_row_change = false;
+		screen_on();
+	}
 }
