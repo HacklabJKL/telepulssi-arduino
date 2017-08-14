@@ -54,8 +54,8 @@ uint8_t (*buf_back)[56] = buf_b;
 uint8_t col_i = 0;
 uint8_t row_i = 0;
 volatile uint8_t may_flip = 0;
-int pwm_lengths[] = { 0x30, 0x10, 0x06 }; // PWM cycle lengths
-volatile int pwm_i = 0; // Current PWM cycle
+volatile uint16_t pwm_lengths[] = { 0x30, 0x10, 0x06 }; // PWM cycle lengths
+uint8_t pwm_i = 0; // Current PWM cycle
 
 // Hardware configuration
 #define PIN_COL_BIT0 A2
@@ -70,6 +70,8 @@ uint8_t bit_i;
 
 inline static void frame_store(uint8_t intensity);
 inline static void set_pixel(uint8_t *plane);
+static void screen_on(void);
+inline static void pick_column(void);
 
 void buf_swap(void) {
 	uint8_t (*tmp)[56] = buf_front;
@@ -89,11 +91,13 @@ void setup() {
 	pinMode(9, OUTPUT); // OC1A main screen turn on
 	pinMode(PIN_ROW_LATCH, OUTPUT);
 	pinMode(PIN_COL_LATCH, OUTPUT);
+	pinMode(MOSI, OUTPUT);
+	pinMode(SCK, OUTPUT);
 
 	// Initialize serial and SPI
 	Serial.begin(19200);
-	SPI.begin();
-
+	SPCR = _BV(SPE) | _BV(MSTR) | _BV(SPR0); // SPI master, clock rate fck/16
+	
 	// Timer magic
 	cli();
 	TCCR1A = 0;
@@ -209,26 +213,43 @@ inline static void set_pixel(uint8_t *plane)
 ISR(TIMER1_COMPA_vect)
 {
 	// Screen is off when we hit here (OC1A has been set LOW)
-  
+
 	// Load new data to LED driver
 	digitalWrite(PIN_COL_LATCH, HIGH);
 	
 	// Are we moving to next segment?
 	if (pwm_i == 0) {
-		// Switch the row on row driver if needed
 		if (col_i == 0) {
-			SPI.transfer(1 << row_i);
+			// Busy-write
+			SPDR = 1 << row_i;
+			while(!(SPSR & (1<<SPIF)));
 
-			// Latch it
+			// Latch the written row info
 			digitalWrite(PIN_ROW_LATCH, LOW);
 			digitalWrite(PIN_ROW_LATCH, HIGH);
-		}
-		// Pick correct column
-		digitalWrite(PIN_COL_BIT2, col_i & 0b100);
-		digitalWrite(PIN_COL_BIT1, col_i & 0b010);
-		digitalWrite(PIN_COL_BIT0, col_i & 0b001);
-      	}
 
+			pick_column();
+			screen_on();
+		} else {
+			// Switch column and turn on the screen.
+			pick_column();
+			screen_on();
+		}
+      	} else {
+		// Just turn on the screen, going to next PWM plane.
+		screen_on();
+	}
+}
+
+inline static void pick_column(void)
+{
+	digitalWrite(PIN_COL_BIT2, col_i & 0b100);
+	digitalWrite(PIN_COL_BIT1, col_i & 0b010);
+	digitalWrite(PIN_COL_BIT0, col_i & 0b001);
+}
+
+static void screen_on(void)
+{
 	// Main screen turn on! (Use Compare Output magic with OC1A)
 	TCCR1A = _BV(COM1A1) | _BV(COM1A0); // Set HIGH on match
 	TCCR1C = _BV(FOC1A); // Force match (turns the screen on)
