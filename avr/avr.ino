@@ -57,6 +57,7 @@ volatile uint8_t may_flip = 0;
 volatile uint16_t pwm_lengths[] = { 0x30, 0x10, 0x06 }; // PWM cycle lengths
 uint8_t pwm_i = 0; // Current PWM cycle
 volatile uint8_t spi_row_change = false;
+volatile uint8_t driving_readiness = 1;
 
 // Hardware configuration
 #define PIN_COL_BIT0 A2
@@ -73,6 +74,7 @@ inline static void frame_store(uint8_t intensity);
 inline static void set_pixel(uint8_t *plane);
 static void screen_on(void);
 inline static void pick_column(void);
+static void try_drive_screen(void);
 
 void buf_swap(void) {
 	uint8_t (*tmp)[56] = buf_front;
@@ -216,10 +218,16 @@ inline static void set_pixel(uint8_t *plane)
 ISR(TIMER1_COMPA_vect)
 {
 	// Screen is off when we hit here (OC1A has been set LOW)
+	try_drive_screen();
+}
 
-	// Load new data to LED driver
-	digitalWrite(PIN_COL_LATCH, HIGH);
-	
+static void try_drive_screen(void)
+{
+	// Do not drive until both timer interrupt and SPI interrupt
+	// have completed.
+	if (++driving_readiness != 2) return;
+	driving_readiness = 0;
+		
 	// Are we moving to next segment?
 	if (pwm_i == 0) {
 		if (col_i == 0) {
@@ -307,5 +315,9 @@ ISR(SPI_STC_vect)
 		digitalWrite(PIN_ROW_LATCH, HIGH);
 		spi_row_change = false;
 		screen_on();
+	} else {
+		// Load new data to LED driver
+		digitalWrite(PIN_COL_LATCH, HIGH);
+		try_drive_screen();
 	}
 }
