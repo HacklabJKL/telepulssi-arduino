@@ -78,7 +78,7 @@ void drawClock() {
   drawDigit(now, next, phase, 5, 34);
 
   // Blinking digits
-  if ((int)(ts/1000) % 2 == 0) {
+  if (ts % 1000 < 500) {
     text(':', 11, 6);
     text(':', 25, 6);
   }
