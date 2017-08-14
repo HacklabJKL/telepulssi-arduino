@@ -55,11 +55,13 @@ uint8_t col_i = 0;
 uint8_t row_i = 0;
 volatile uint8_t may_flip = 0;
 int pwm_lengths[] = { 0x30, 0x10, 0x06 }; // PWM cycle lengths
-int pwm_i = 0; // Current PWM cycle
+volatile int pwm_i = 0; // Current PWM cycle
 
 // Hardware configuration
-uint8_t pin_col[] = {5, A0, 4, A1, 3, A2, 2, A3};
-#define PIN_ROW_LATCH 6
+#define PIN_COL_BIT0 A2
+#define PIN_COL_BIT1 A1
+#define PIN_COL_BIT2 A0
+#define PIN_ROW_LATCH 7
 #define PIN_COL_LATCH 8
 
 // Serial access
@@ -81,9 +83,10 @@ void buf_swap(void) {
 
 void setup() {
 	// Enable output pins for LED display
-	for (int i=0; i<ARRAY_SIZE(pin_col); i++) {
-		pinMode(pin_col[i], OUTPUT);
-	}
+	pinMode(PIN_COL_BIT0, OUTPUT);
+	pinMode(PIN_COL_BIT1, OUTPUT);
+	pinMode(PIN_COL_BIT2, OUTPUT);
+	pinMode(9, OUTPUT); // OC1A main screen turn on
 	pinMode(PIN_ROW_LATCH, OUTPUT);
 	pinMode(PIN_COL_LATCH, OUTPUT);
 
@@ -93,13 +96,13 @@ void setup() {
 
 	// Timer magic
 	cli();
-	TCCR1A = 0; // Do not toggle pins
-	TCCR1B = (1 << CS11 | 1 << CS10); // Clock divider 64, 64/16e6 = 40µs cycle
-	TCCR1C = 0; // not forcing output compare
+	TCCR1A = 0;
+	TCCR1B = _BV(CS11) | _BV(CS10); // Clock divider 64, 64/16e6 = 40µs cycle
 	TCNT1 = 0; // set timer counter initial value (16 bit value)
-	TIMSK1 = 1 << OCIE1A; // enable timer compare match 1A interrupt
+	TIMSK1 = _BV(OCIE1A); // enable timer compare match 1A interrupt
 	OCR1A = 1; // Go to the interrupt vector ASAP
 	sei();
+
 }
 
 void loop() {
@@ -206,17 +209,15 @@ inline static void set_pixel(uint8_t *plane)
 
 ISR(TIMER1_COMPA_vect)
 {
-	static int cur_pin = pin_col[0];
+	// Force screen off if not yet happened (force OC1A on)
+	TCCR1A = (1 << COM1A1);
+	TCCR1C = (1 << FOC1A);
+  
+	// Load new data to LED driver
+	digitalWrite(PIN_COL_LATCH, HIGH);
 	
-	// Set run length
-	OCR1A = pwm_lengths[pwm_i];
-
 	// Are we moving to next segment?
 	if (pwm_i == 0) {
-		// Blank screen
-		digitalWrite(cur_pin, HIGH);
-		digitalWrite(PIN_COL_LATCH, HIGH);
-
 		// Switch the row on row driver if needed
 		if (col_i == 0) {
 			SPI.transfer(1 << row_i);
@@ -225,17 +226,24 @@ ISR(TIMER1_COMPA_vect)
 			digitalWrite(PIN_ROW_LATCH, LOW);
 			digitalWrite(PIN_ROW_LATCH, HIGH);
 		}
-	
-		// Main screen turn on!
-		cur_pin = pin_col[col_i];
-		digitalWrite(cur_pin, LOW);
-	} else {
-		// Just latch new data in without blanking.
-		digitalWrite(PIN_COL_LATCH, HIGH);
-	}
+		// Pick correct column
+		digitalWrite(PIN_COL_BIT2, col_i & 0b100);
+		digitalWrite(PIN_COL_BIT1, col_i & 0b010);
+		digitalWrite(PIN_COL_BIT0, col_i & 0b001);
+      	}
+
+	// Main screen turn on! (force OC1A on)
+	TCCR1A = (1 << COM1A1) | (1 << COM1A0);
+	TCCR1C = (1 << FOC1A);
+  
+	// Say we want to turn off when we hit the target even if interrupt doesn't run
+	TCCR1A = (1 << COM1A1);
 
 	// Restart timer counter
 	TCNT1 = 0;
+	
+	// Set run length
+	OCR1A = pwm_lengths[pwm_i];
 	
 	/* After turning on the screen, we have "plenty" of CPU cycles
 	 * to spend. Preparing a new segment to display.
@@ -247,6 +255,7 @@ ISR(TIMER1_COMPA_vect)
 	 * 3. Rows
 	 * 4. Flip frame, if available, otherwise; repeat.
 	 */
+	sei();
 	pwm_i++;
 	if (pwm_i >= ARRAY_SIZE(pwm_lengths)) {
 		pwm_i = 0;
