@@ -60,11 +60,11 @@ volatile uint8_t spi_row_change = false;
 volatile uint8_t driving_readiness = 1;
 
 // Hardware configuration
-#define PIN_COL_BIT0 A2
-#define PIN_COL_BIT1 A1
-#define PIN_COL_BIT2 A0
-#define PIN_ROW_LATCH 7
-#define PIN_COL_LATCH 8
+#define PIN_COL_BIT0 A1
+#define PIN_COL_BIT1 A2
+#define PIN_COL_BIT2 A3
+#define PIN_ROW_LATCH 10
+#define PIN_COL_LATCH A0
 
 // Serial access
 unsigned int byte_i;
