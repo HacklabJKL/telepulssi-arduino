@@ -1,0 +1,15 @@
+#!/bin/sh -eu
+#
+# Sets PWM plane lengths. NB! This doesn't support serial escapes
+# correctly so if a resulting byte ends up being 0x7E (escape char, ~)
+# then it doesn't set that value. Please fix if needed.
+
+stty -F "$1" raw 19200
+{
+    echo -n ~W
+    printf "%04x%04x%04x%02x\n" $2 $3 $4 2|xxd -p -r
+} >$1
+
+# FPS calculation: CPU clock / Timer1 prescaler / number of rows /
+# Number of segments = 16e6 / 8 / 7 / 8 = 35714
+printf "PWM run lengths: A: %d µs, B: %d µs, C: %d µs. Refresh rate %d Hz\n" $(($2 / 2)) $(($3 / 2)) $(($4 / 2)) $((35714 / ($2+$3+$4)))

@@ -179,8 +179,10 @@ void loop() {
 		}
 		break;
 	case MODE_PWM:
-		if (byte_i<3) {
-			pwm_lengths[byte_i] = in;
+		if (byte_i<6) {
+			// Receive PWM plane durations as 3 big endian 16 bit values.
+			uint8_t i = byte_i >> 1;
+			pwm_lengths[i] = pwm_lengths[i] << 8 | in;
 		} else {
 			TCCR1B = in;
 			mode = MODE_NOOP;
