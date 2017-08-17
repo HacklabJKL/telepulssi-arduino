@@ -2,8 +2,6 @@
   Telepulssi TP-KN10 slave LED screen driver
 */
 
-#include <SPI.h>
-
 // Helper functions. NB! ARRAY_SIZE doesn't check if it's an array.
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
@@ -70,20 +68,20 @@ volatile uint8_t driving_readiness = 1;
 unsigned int byte_i;
 uint8_t bit_i;
 
+inline static void try_buf_swap(void);
 inline static void frame_store(uint8_t intensity);
 inline static void set_pixel(uint8_t *plane);
 static void screen_on(void);
 inline static void pick_column(void);
 static void try_drive_screen(void);
 
-void buf_swap(void) {
+inline static void try_buf_swap(void) {
+	if (!may_flip) return;
 	uint8_t (*tmp)[56] = buf_front;
 	buf_front = buf_back;
 	buf_back = tmp;
-	if (may_flip) {
-		Serial.write('S');
-		may_flip = 0;
-	}
+	Serial.write('S');
+	may_flip = 0;
 }
 
 void setup() {
@@ -289,15 +287,15 @@ static void screen_on(void)
 	if (pwm_i >= ARRAY_SIZE(pwm_lengths)) {
 		pwm_i = 0;
 		col_i++;
-		if (col_i > 7) {
+		if (col_i >= 8) {
 			col_i = 0;
 			row_i++;
-			if (row_i > 6) {
+			if (row_i >= 7) {
 				row_i = 0;
-				if (may_flip) {
-					buf_swap();
-				}
+				try_buf_swap();
 			}
+			// We can already pull the row latch down
+			digitalWrite(PIN_ROW_LATCH, LOW);
 		}
 	}
 
@@ -305,8 +303,7 @@ static void screen_on(void)
 	// it down.
 	digitalWrite(PIN_COL_LATCH, LOW);
 	
-	// Send new data via SPI. Don't need to wait it to complete
-	// because it completes before the next timer interrupt.
+	// Send new data via SPI. Completion is monitored in SPI_STC_vect.
 	SPDR = buf_front[pwm_i][8*row_i+col_i];
 }
 
@@ -316,7 +313,6 @@ ISR(SPI_STC_vect)
 {
 	if (spi_row_change) {
 		// Latch the written row info
-		digitalWrite(PIN_ROW_LATCH, LOW);
 		digitalWrite(PIN_ROW_LATCH, HIGH);
 		spi_row_change = false;
 		screen_on();
