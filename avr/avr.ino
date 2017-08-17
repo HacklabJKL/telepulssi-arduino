@@ -227,7 +227,10 @@ static void try_drive_screen(void)
 	// have completed.
 	if (++driving_readiness != 2) return;
 	driving_readiness = 0;
-		
+
+	// Load new data to LED driver
+	digitalWrite(PIN_COL_LATCH, HIGH);
+	
 	// Are we moving to next segment?
 	if (pwm_i == 0) {
 		if (col_i == 0) {
@@ -316,8 +319,6 @@ ISR(SPI_STC_vect)
 		spi_row_change = false;
 		screen_on();
 	} else {
-		// Load new data to LED driver
-		digitalWrite(PIN_COL_LATCH, HIGH);
 		try_drive_screen();
 	}
 }
