@@ -54,7 +54,7 @@ uint8_t (*buf_back)[56] = buf_b;
 uint8_t col_i = 0;
 uint8_t row_i = 0;
 volatile uint8_t may_flip = 0;
-volatile uint16_t pwm_lengths[] = { 0x30, 0x10, 0x06 }; // PWM cycle lengths
+volatile uint16_t pwm_lengths[] = { 200, 100, 50 }; // PWM cycle lengths in 0.5µs
 uint8_t pwm_i = 0; // Current PWM cycle
 volatile uint8_t spi_row_change = false;
 volatile uint8_t driving_readiness = 1;
@@ -106,7 +106,7 @@ void setup() {
 	// Timer magic
 	cli();
 	TCCR1A = 0;
-	TCCR1B = _BV(CS11) | _BV(CS10); // Clock divider 64, 64/16e6 = 40µs tick
+	TCCR1B = _BV(CS11); // Clock divider 8, 8/16e6 = 500ns tick
 	TCNT1 = 0; // Set timer counter initial value (16 bit value)
 	TIMSK1 = _BV(OCIE1A); // Go to interrupt vector when timer reaches target
 	OCR1A = 1; // Go to the interrupt vector ASAP after startup
