@@ -40,8 +40,8 @@ void draw() {
   final int pause = 40;
   float angle = 2*PI*pow(sin((speed*millis()) % (PI/2)), pause) + phaseShift;
 
-  float y = -0.5*(sin(-angle)+1)*(logo.height-height);
-  float x = -0.5*(cos(angle)+1)*(logo.width-width);
+  float y = -0.5*(sin(-angle)+1)*(logo.height/2-height);
+  float x = -0.5*(cos(angle)+1)*(logo.width/2-width);
 
   // Rotate the whole thing
   translate(x,y);
@@ -52,6 +52,7 @@ void draw() {
   drawClock();
   popMatrix();
 
+  scale(0.5);
   drawLogo();
 
   // Finally update the screen and preview.
