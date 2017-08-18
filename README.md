@@ -23,7 +23,7 @@ To see how to wire TP-KN10 to Arduino, see [pinout](pinout.md).
 Telepulssi. Processing version 3.3 or newer is recommended.
 
 Open
-[telepulssi_processing.pde](telepulssi_processing/telepulssi_processing.pde)
+[processing/hello/hello.pde](processing/hello/hello.pde)
 to Processing, change serial port name, hack and run! :-)
 
 Also, it has Telepulssi emulator!
