@@ -21,10 +21,9 @@ void setup() {
   textFont(font);
   logo = loadImage("logo.png");
 
-  // Initialize real Telepulssi, emulated one, or both. Pick the on you like to use
-  //telepulssi = new Telepulssi(this, true, "/dev/ttyACM0"); // Preview and real hardware
-  telepulssi = new Telepulssi(this, true, null); // Preview only
-  //telepulssi = new Telepulssi(this, false, "/dev/ttyACM0"); // Real hardware only
+  // If you supply serial port from command-line, use that. Emulate otherwise.
+  String port = args == null ? null : args[0];
+  telepulssi = new Telepulssi(this, port == null, port); // Preview only
 
   // Hide the original window
   surface.setVisible(false);
