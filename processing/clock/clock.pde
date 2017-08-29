@@ -67,8 +67,8 @@ void drawLogo() {
 
 void drawClock() {
   long ts = System.currentTimeMillis();
-  String now = timeFmt.format(new Date(ts));
-  String next = timeFmt.format(new Date(ts+1000));
+  String now = format(ts);
+  String next = format(ts+1000);
   float phase = (float)(ts % 1000) / 1000;
 
   // Draw actual digits
@@ -93,6 +93,10 @@ void drawClock() {
   // Write weekday
   fill(255);
   text(dayFmt.format(new Date(ts)), -13, -3);
+}
+
+String format(long ts) {
+  return timeFmt.format(new Date(ts));
 }
 
 void drawDigit(String a, String b, float phase, int i, float pos) {

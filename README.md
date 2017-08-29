@@ -1,3 +1,4 @@
+<!-- -*- mode: markdown; -*- -->
 # Telepulssi TP-KN10 driver for Arduino
 
 Local radio amateur club OH6AD has "bonked" some 80s display modules
