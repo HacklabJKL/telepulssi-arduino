@@ -3,12 +3,19 @@
  */
 
 import java.util.*;
+import java.net.*;
+import java.io.*;
+
 import java.text.*;
 
 Telepulssi telepulssi;
 final static DateFormat timeFmt = new SimpleDateFormat("HHmmss");
 final static DateFormat dayFmt = new SimpleDateFormat("E d.M.y");
 PImage logo;
+PImage degree;
+String tempString = "N/A";
+boolean noTemp = true;
+Timer timer;
 
 public void settings() {
   // Telepulssi screen resolution is 40x7
@@ -18,9 +25,20 @@ public void settings() {
 void setup() {  
   // First set up your stuff.
   noStroke();
+   TimerTask repeatedTask = new TimerTask() {
+        public void run() {
+            fetchTemperaturePage();
+        }
+    };
+    timer = new Timer("Timer");
+     
+    long delay  = 5000L;
+    long period = 600000L;
+    timer.scheduleAtFixedRate(repeatedTask, delay, period);
   PFont font = loadFont("Ubuntu-Medium-10.vlw");
   textFont(font);
   logo = loadImage("logo.png");
+  degree = loadImage("degree.png");
 
   // If you supply serial port from command-line, use that. Emulate otherwise.
   String port = args == null ? null : args[0];
@@ -51,7 +69,7 @@ void draw() {
   // Draw clock in some coordinates in the logo
   pushMatrix();
   translate(15, 0);
-  drawClock();
+  drawText();
   popMatrix();
 
   scale(0.5);
@@ -63,6 +81,21 @@ void draw() {
 
 void drawLogo() {
   image(logo, 0, 0);
+}
+
+
+void drawTemperature() {
+  text(tempString, 0, 7);
+  image(degree,26,-1);
+  text("C",31,7);
+}
+
+void drawText() {
+  if((millis()/4000)%4==0 && !noTemp){
+    drawTemperature();
+  }else{
+    drawClock();
+  }
 }
 
 void drawClock() {
@@ -96,7 +129,10 @@ void drawClock() {
 }
 
 String format(long ts) {
-  return timeFmt.format(new Date(ts));
+  String s = timeFmt.format(new Date(ts));
+  if ("133700".equals(s)) return "ELITE!";
+  if ("140000".equals(s)) return "KAHVIA";
+  return s;
 }
 
 void drawDigit(String a, String b, float phase, int i, float pos) {
@@ -114,4 +150,27 @@ void drawDigit(String a, String b, float phase, int i, float pos) {
   text(a.charAt(i), 0, 7);
   text(b.charAt(i), 0, 15);
   popMatrix();
+}
+
+void fetchTemperaturePage(){
+  String content = null;
+  URLConnection connection = null;
+  try {
+    connection =  new URL("http://weather.jyu.fi").openConnection();
+    Scanner scanner = new Scanner(connection.getInputStream());
+    scanner.useDelimiter("\\Z");
+    content = scanner.next();
+    scanner.close();
+  }catch ( Exception ex ) {
+    // noconnection
+    noTemp = true;
+  }
+  try{
+    int indexOfTemp = content.indexOf("font-size:20px; strong")+25;
+    tempString =content.substring(indexOfTemp,indexOfTemp+5);
+    noTemp = false;
+    //System.out.println(tempString);
+  }catch(Exception ex){
+    noTemp = true;
+  }
 }
